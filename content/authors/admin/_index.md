@@ -1,6 +1,6 @@
 ---
 # Display name
-name: Weitao Xu
+name: Weitao Xu(666)
 
 # Username (this should match the folder name)
 authors:
