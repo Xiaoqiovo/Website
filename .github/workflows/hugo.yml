@@ -1,55 +1,57 @@
-# name: Deploy to GitHub Pages
-
-# on:
-#   push:
-#     branches:
-#       - main
-
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v3
-#         with:
-#           submodules: true
-#           fetch-depth: 0
-
-#       - name: Setup Hugo
-#         uses: peaceiris/actions-hugo@v2
-#         with:
-#           hugo-version: 'latest'
-#           extended: true
-
-#       - name: Build
-#         run: hugo --minify
-
-#       - name: Deploy
-#         uses: peaceiris/actions-gh-pages@v3
-#         with:
-#           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-#           external_repository: Xiaoqiovo/Xiaoqiovo.github.io
-#           publish_branch: main
-#           publish_dir: ./public
-
-name: Deploy GitHub Pages
+name: Deploy Hugo site to Pages
 
 on:
   push:
     branches:
-      - main  # 设置要触发部署的分支
+      - main  # 设置触发部署的分支
+  pull_request:
+
+# 设置 GITHUB_TOKEN 的权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 只允许同时进行一次部署
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # 这行很重要
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
+        uses: actions/checkout@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public  # 要部署的目录
+          submodules: recursive  # 获取Hugo主题（如果你用git submodule添加主题）
+          fetch-depth: 0         # 获取完整的历史记录以支持 .LastModified 等功能
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v2
+        with:
+          hugo-version: 'latest'
+          extended: true  # 如果你使用的是extended版本的Hugo
+
+      - name: Build with Hugo
+        env:
+          HUGO_ENVIRONMENT: production
+          HUGO_ENV: production
+        run: |
+          hugo --minify
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./public
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
