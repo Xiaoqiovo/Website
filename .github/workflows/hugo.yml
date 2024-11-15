@@ -44,7 +44,6 @@ jobs:
         uses: actions/upload-pages-artifact@v2
         with:
           path: ./public
-          publish_branch: gh-pages  # 部署到 gh-pages 分支
 
   deploy:
     environment:
